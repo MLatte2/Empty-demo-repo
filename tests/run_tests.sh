@@ -34,4 +34,26 @@ dave 2
 bob 1
 erin 1' "$(./logtool.sh failed-logins logs)"
 
-echo "All 4 checks passed."
+./logtool.sh report logs "$temp_dir/report.txt"
+check "Report" '=== LOG REPORT ===
+[OVERVIEW]
+Files scanned: 3
+Lines processed: 54
+[COUNTS BY LEVEL]
+ERROR 19
+WARN 11
+INFO 24
+[COUNTS BY SERVICE]
+sshd 14
+nginx 10
+backup 9
+cron 9
+kernel 7
+authd 5
+[FAILED LOGIN USERS]
+alice 3
+dave 2
+bob 1
+erin 1' "$(cat "$temp_dir/report.txt")"
+
+echo "All 5 checks passed."

@@ -18,12 +18,25 @@ Commands:
   summary <log_dir>            Print summary counts
   services <log_dir>           Print counts by service
   failed-logins <log_dir>      Print failed login counts by user
+  report <log_dir> <file>      Generate a plain-text report
 HELP
         exit 0
         ;;
     summary|services|failed-logins)
         if [ "$#" -ne 2 ]; then
             error "Use: $0 $command <log_dir>"
+        fi
+        ;;
+    report)
+        if [ "$#" -ne 3 ]; then
+            error "Use: $0 report <log_dir> <output_file>"
+        fi
+        output_file=$3
+        if [ -z "$output_file" ] || [ -L "$output_file" ]; then
+            error "Output must be a regular file"
+        fi
+        if [ -e "$output_file" ] && [ ! -f "$output_file" ]; then
+            error "Output must be a regular file"
         fi
         ;;
     *) error "Missing or unknown command. Use --help." ;;
@@ -41,6 +54,9 @@ find "$log_dir/." -type f -name '*.log' > "$temp_dir/files" || error "Cannot sea
 while IFS= read -r file; do
     if [ ! -r "$file" ]; then
         error "Cannot read: $file"
+    fi
+    if [ "$command" = report ] && [ "$file" -ef "$output_file" ]; then
+        error "Cannot overwrite an input log"
     fi
     # msg can have usernames in it too
     sed 's/[[:space:]]msg=.*//' "$file" || error "Cannot read: $file"
@@ -79,8 +95,21 @@ failed_logins() {
     grep -oE 'user=[^[:space:]]+' | cut -d= -f2 | grep -v '^-$' | count_names
 }
 
+report() {
+    echo '=== LOG REPORT ==='
+    echo '[OVERVIEW]'
+    printf 'Files scanned: %d\nLines processed: %d\n' "$files" "$lines"
+    echo '[COUNTS BY LEVEL]'
+    printf 'ERROR %d\nWARN %d\nINFO %d\n' "$errors" "$warnings" "$infos"
+    echo '[COUNTS BY SERVICE]'
+    services
+    echo '[FAILED LOGIN USERS]'
+    failed_logins
+}
+
 case "$command" in
     summary) summary ;;
     services) services ;;
     failed-logins) failed_logins ;;
+    report) report > "$output_file" || error "Cannot write report" ;;
 esac
