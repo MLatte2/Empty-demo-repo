@@ -16,10 +16,12 @@ case "$command" in
 Commands:
   --help                      Show this help message
   summary <log_dir>            Print summary counts
+  services <log_dir>           Print counts by service
+  failed-logins <log_dir>      Print failed login counts by user
 HELP
         exit 0
         ;;
-    summary)
+    summary|services|failed-logins)
         if [ "$#" -ne 2 ]; then
             error "Use: $0 $command <log_dir>"
         fi
@@ -63,6 +65,22 @@ summary() {
     printf 'ERROR=%d\nWARN=%d\nINFO=%d\n' "$errors" "$warnings" "$infos"
 }
 
+# the spec wants name order when counts match
+count_names() {
+    sort | uniq -c | sort -k1,1nr -k2,2 | awk '{print $2, $1}'
+}
+
+services() {
+    grep -oE 'service=[^[:space:]]+' "$data" | cut -d= -f2 | count_names
+}
+
+failed_logins() {
+    grep -w 'event=FAILED_LOGIN' "$data" |
+    grep -oE 'user=[^[:space:]]+' | cut -d= -f2 | grep -v '^-$' | count_names
+}
+
 case "$command" in
     summary) summary ;;
+    services) services ;;
+    failed-logins) failed_logins ;;
 esac

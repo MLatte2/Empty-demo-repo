@@ -22,4 +22,16 @@ ERROR=19
 WARN=11
 INFO=24' "$(./logtool.sh summary logs)"
 
-echo "All 2 checks passed."
+check "Services" 'sshd 14
+nginx 10
+backup 9
+cron 9
+kernel 7
+authd 5' "$(./logtool.sh services logs)"
+
+check "Failed logins" 'alice 3
+dave 2
+bob 1
+erin 1' "$(./logtool.sh failed-logins logs)"
+
+echo "All 4 checks passed."
