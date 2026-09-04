@@ -19,6 +19,7 @@ Commands:
   services <log_dir>           Print counts by service
   failed-logins <log_dir>      Print failed login counts by user
   report <log_dir> <file>      Generate a plain-text report
+  top-users <log_dir> [N]      Print the top N users (default: 3)
 HELP
         exit 0
         ;;
@@ -37,6 +38,18 @@ HELP
         fi
         if [ -e "$output_file" ] && [ ! -f "$output_file" ]; then
             error "Output must be a regular file"
+        fi
+        ;;
+    top-users)
+        if [ "$#" -ne 2 ] && [ "$#" -ne 3 ]; then
+            error "Use: $0 top-users <log_dir> [N]"
+        fi
+        limit=3
+        if [ "$#" -eq 3 ]; then
+            limit=$3
+        fi
+        if [[ ! "$limit" =~ ^[1-9][0-9]*$ ]]; then
+            error "N must be a positive whole number"
         fi
         ;;
     *) error "Missing or unknown command. Use --help." ;;
@@ -95,6 +108,11 @@ failed_logins() {
     grep -oE 'user=[^[:space:]]+' | cut -d= -f2 | grep -v '^-$' | count_names
 }
 
+top_users() {
+    grep -oE 'user=[^[:space:]]+' "$data" |
+    cut -d= -f2 | grep -v '^-$' | count_names | head -n "$limit"
+}
+
 report() {
     echo '=== LOG REPORT ==='
     echo '[OVERVIEW]'
@@ -111,5 +129,6 @@ case "$command" in
     summary) summary ;;
     services) services ;;
     failed-logins) failed_logins ;;
+    top-users) top_users ;;
     report) report > "$output_file" || error "Cannot write report" ;;
 esac
