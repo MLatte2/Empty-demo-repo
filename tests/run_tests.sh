@@ -60,4 +60,10 @@ check "Default top users" 'alice 9
 carol 8
 erin 7' "$(./logtool.sh top-users logs)"
 
-echo "All 6 checks passed."
+check "Top two users" 'alice 9
+carol 8' "$(./logtool.sh top-users logs 2)"
+
+./logtool.sh top-users logs 0 > /dev/null 2>&1
+check "Reject zero limit" "1" "$?"
+
+echo "All 8 checks passed."
